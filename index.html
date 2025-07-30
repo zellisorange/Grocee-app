@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grocee - Smart Canadian Grocery Shopping</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header with API Status */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .api-status {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .api-status.connected {
+            color: #28a745;
+        }
+
+        .api-status.disconnected {
+            color: #dc3545;
+        }
+
+        .api-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .live-data-badge {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: inline-block;
+            margin: 10px 15px;
+        }
+
+        .savings-banner {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            display: inline-block;
+            font-weight: 600;
+            margin: 10px 15px;
+        }
+
+        /* Search Section */
+        .search-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-container {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .input-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .suggestion-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .suggestion-item:hover {
+            background: #f8f9fa;
+        }
+
+        .suggestion-price {
+            color: #28a745;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .suggestion-store {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .live-indicator {
+            background: #28a745;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        /* Enhanced Store Navigation */
+        .store-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .store-nav-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .store-nav-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .store-nav-subtitle {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        /* Store Groups */
+        .store-groups {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .store-group {
+            background: rgba(248, 249, 250, 0.6);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .store-group-header {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #495057;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .store-group-tabs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .store-tab {
+            background: rgba(102, 126, 234, 0.08);
+            border: 2px solid rgba(102, 126, 234, 0.15);
+            color: #667eea;
+            padding: 18px 20px;
+            border-radius: 15px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            width: 100%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-height: 85px;
+            justify-content: center;
+        }
+
+        .store-tab:hover {
+            background: rgba(102, 126, 234, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .store-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 12px 25px rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .store-tab-icon {
+            font-size: 1.4rem;
+            margin-bottom: 2px;
+        }
+
+        .store-tab-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .item-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        /* Real Grocery List Styling */
+        .grocery-list-container {
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .store-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+        }
+
+        .store-header h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .store-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Notepad-style list */
+        .notepad-list {
+            background: linear-gradient(
+                to bottom,
+                #fff 0%,
+                #fff 30px,
+                #e8f4fd 30px,
+                #e8f4fd 31px,
+                #fff 31px,
+                #fff 61px,
+                #e8f4fd 61px,
+                #e8f4fd 62px
+            );
+            background-size: 100% 62px;
+            min-height: 400px;
+            padding: 40px 80px 40px 100px;
+            position: relative;
+        }
+
+        .notepad-list::before {
+            content: '';
+            position: absolute;
+            left: 70px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ff6b6b;
+            opacity: 0.6;
+        }
+
+        .holes {
+            position: absolute;
+            left: 25px;
+            top: 60px;
+            bottom: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: calc(100% - 120px);
+        }
+
+        .hole {
+            width: 20px;
+            height: 20px;
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+        }
+
+        .category-section {
+            margin-bottom: 40px;
+            transition: all 0.3s ease;
+        }
+
+        .category-header {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .category-items {
+            list-style: none;
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            line-height: 32px;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .list-item:hover {
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 4px;
+            padding: 0 8px;
+            margin: 4px -8px;
+        }
+
+        .list-item.completed {
+            opacity: 0.6;
+        }
+
+        .list-item.completed .item-text {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .item-checkbox {
+            margin-right: 15px;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+
+        .item-text {
+            flex: 1;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+        }
+
+        .item-price {
+            color: #28a745;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .item-actions {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex;
+            gap: 5px;
+        }
+
+        .list-item:hover .item-actions {
+            opacity: 1;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: rgba(220, 53, 69, 0.1);
+        }
+
+        .empty-category {
+            color: #999;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 8px;
+            border: 2px dashed #ddd;
+        }
+
+        /* Store Content */
+        .store-content {
+            display: none;
+            position: relative;
+            z-index: 1;
+            margin-top: 20px;
+        }
+
+        .store-content.active {
+            display: block;
+        }
+
+        /* Price Comparison Section */
+        .price-comparison {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .price-comparison.active {
+            display: block;
+        }
+
+        .comparison-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .comparison-header h3 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .comparison-toggle {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border: 2px solid rgba(40, 167, 69, 0.2);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .comparison-toggle:hover {
+            background: rgba(40, 167, 69, 0.2);
+        }
+
+        .comparison-toggle.active {
+            background: #28a745;
+            color: white;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .comparison-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .comparison-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .comparison-card.best-deal {
+            border-color: #28a745;
+            background: linear-gradient(135deg, #f8fff9 0%, #ffffff 100%);
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            font-weight: 600;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 350px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        .notification.info {
+            background: #17a2b8;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .notepad-list {
+                padding: 30px 40px 30px 60px;
+            }
+            
+            .notepad-list::before {
+                left: 40px;
+            }
+            
+            .holes {
+                left: 15px;
+            }
+            
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .store-group-tabs {
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header with API Status -->
+        <div class="header">
+            <div class="api-status" id="apiStatus">
+                <div class="api-indicator"></div>
+                <span id="apiStatusText">Connecting to API...</span>
+            </div>
+            
+            <h1>🛒 Grocee</h1>
+            <p>Smart Canadian Grocery Shopping with Live Data Intelligence</p>
+            <div class="live-data-badge" id="liveDataBadge">
+                📡 Real-time Canadian grocery data
+            </div>
+            <div class="savings-banner">
+                💰 Total Saved: $<span id="totalSavings">0.00</span> • Items: <span id="totalItems">0</span>
+            </div>
+        </div>
+
+        <!-- Enhanced Search Section -->
+        <div class="search-section">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="color: #667eea; margin-bottom: 10px;">🛒 Build Your Shopping Lists</h2>
+                <p style="color: #666; font-size: 1.1rem;">Search for products and add them to store-specific lists below</p>
+            </div>
+            
+            <div class="search-container">
+                <div class="input-group">
+                    <label class="input-label">🔍 Search Products</label>
+                    <input type="text" id="itemName" class="input-field" placeholder="Try: bananas, milk, bread, chicken..." autocomplete="off" />
+                    <div class="search-suggestions" id="searchSuggestions">
+                        <!-- Live search suggestions will appear here -->
+                    </div>
+                </div>
+                <div class="input-group" style="max-width: 180px;">
+                    <label class="input-label">🏪 Store</label>
+                    <select id="itemStore" class="input-field">
+                        <option value="all">🔍 All Stores</option>
+                        <optgroup label="Major Chains">
+                            <option value="metro">Metro</option>
+                            <option value="loblaws">Loblaws</option>
+                            <option value="sobeys">Sobeys</option>
+                            <option value="walmart">Walmart</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <button class="btn" id="addItemBtn" onclick="addItem()">➕ Add to List</button>
+                <button class="btn btn-secondary" onclick="togglePriceComparison()">
+                    💰 Compare Prices
+                </button>
+            </div>
+            
+            <div style="background: rgba(40, 167, 69, 0.1); border: 2px solid rgba(40, 167, 69, 0.2); border-radius: 10px; padding: 15px; text-align: center;">
+                <strong style="color: #28a745;">💡 How to use:</strong>
+                <div style="color: #155724; margin-top: 8px; font-size: 0.95rem;">
+                    1. Type a product name • 2. Choose a store (or "All Stores" to compare) • 3. Click "Add to List" • 4. Check your organized lists below!
+                </div>
+            </div>
+        </div>
+
+        <!-- Price Comparison Section -->
+        <div class="price-comparison" id="priceComparison">
+            <div class="comparison-header">
+                <h3>💰 Live Price Comparison Across Canadian Stores</h3>
+                <p>Real-time pricing from your API server</p>
+                <button class="comparison-toggle" id="comparisonToggle" onclick="togglePriceComparison()">
+                    Hide Comparisons
+                </button>
+            </div>
+            <div class="comparison-grid" id="comparisonGrid">
+                <!-- Price comparisons will be populated here -->
+            </div>
+        </div>
+
+        <!-- Enhanced Store Navigation -->
+        <div class="store-nav">
+            <div class="store-nav-header">
+                <div class="store-nav-title">🇨🇦 Canadian Grocery Stores</div>
+                <div class="store-nav-subtitle">Choose your preferred store to build your shopping list</div>
+            </div>
+            
+            <div class="store-groups">
+                <!-- Major Chains -->
+                <div class="store-group">
+                    <div class="store-group-header">🏪 Major Chains</div>
+                    <div class="store-group-tabs">
+                        <div class="store-tab active" data-store="metro" onclick="switchStore('metro')">
+                            <div class="store-tab-icon">🏪</div>
+                            <div class="store-tab-name">Metro</div>
+                            <span class="item-count" id="metro-count">0</span>
+                        </div>
+                        <div class="store-tab" data-store="loblaws" onclick="switchStore('loblaws')">
+                            <div class="store-tab-icon">🛍️</div>
+                            <div class="store-tab-name">Loblaws</div>
+                            <span class="item-count" id="loblaws-count">0</span>
+                        </div>
+                        <div class="store-tab" data-store="sobeys" onclick="switchStore('sobeys')">
+                            <div class="store-tab-icon">🏬</div>
+                            <div class="store-tab-name">Sobeys</div>
+                            <span class="item-count" id="sobeys-count">0</span>
+                        </div>
+                        <div class="store-tab" data-store="walmart" onclick="switchStore('walmart')">
+                            <div class="store-tab-icon">🛒</div>
+                            <div class="store-tab-name">Walmart</div>
+                            <span class="item-count" id="walmart-count">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Store Contents with Real Grocery List Look -->
+        <div id="metro" class="store-content active">
+            <div class="grocery-list-container">
+                <div class="store-header">
+                    <h2>🏪 Metro Shopping List</h2>
+                    <div class="store-stats">
+                        <span>Items: <span id="metro-items">0</span></span>
+                        <span>Est. Cost: $<span id="metro-cost">0.00</span></span>
+                        <span>Savings: $<span id="metro-savings">0.00</span></span>
+                    </div>
+                </div>
+
+                <div class="notepad-list" id="metro-list">
+                    <div class="holes">
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                    </div>
+                    <div id="metro-categories">
+                        <!-- Categories will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loblaws" class="store-content">
+            <div class="grocery-list-container">
+                <div class="store-header">
+                    <h2>🛍️ Loblaws Shopping List</h2>
+                    <div class="store-stats">
+                        <span>Items: <span id="loblaws-items">0</span></span>
+                        <span>Est. Cost: $<span id="loblaws-cost">0.00</span></span>
+                        <span>Savings: $<span id="loblaws-savings">0.00</span></span>
+                    </div>
+                </div>
+
+                <div class="notepad-list" id="loblaws-list">
+                    <div class="holes">
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                    </div>
+                    <div id="loblaws-categories">
+                        <!-- Categories will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="sobeys" class="store-content">
+            <div class="grocery-list-container">
+                <div class="store-header">
+                    <h2>🏬 Sobeys Shopping List</h2>
+                    <div class="store-stats">
+                        <span>Items: <span id="sobeys-items">0</span></span>
+                        <span>Est. Cost: $<span id="sobeys-cost">0.00</span></span>
+                        <span>Savings: $<span id="sobeys-savings">0.00</span></span>
+                    </div>
+                </div>
+
+                <div class="notepad-list" id="sobeys-list">
+                    <div class="holes">
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                    </div>
+                    <div id="sobeys-categories">
+                        <!-- Categories will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="walmart" class="store-content">
+            <div class="grocery-list-container">
+                <div class="store-header">
+                    <h2>🛒 Walmart Shopping List</h2>
+                    <div class="store-stats">
+                        <span>Items: <span id="walmart-items">0</span></span>
+                        <span>Est. Cost: $<span id="walmart-cost">0.00</span></span>
+                        <span>Savings: $<span id="walmart-savings">0.00</span></span>
+                    </div>
+                </div>
+
+                <div class="notepad-list" id="walmart-list">
+                    <div class="holes">
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                        <div class="hole"></div>
+                    </div>
+                    <div id="walmart-categories">
+                        <!-- Categories will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // GLOBAL VARIABLES
+        // ==========================================
+        
+        const API_BASE = 'http://localhost:3001/api';
+        let apiConnected = false;
+        let searchInProgress = false;
+        let searchTimeout = null;
+        let currentStore = 'metro';
+
+        // Store data structure
+        const stores = {
+            metro: {
+                name: 'Metro',
+                categories: [
+                    { id: 'produce', name: 'Produce', icon: '🥕', items: [] },
+                    { id: 'dairy', name: 'Dairy & Eggs', icon: '🥛', items: [] },
+                    { id: 'meat', name: 'Meat & Seafood', icon: '🥩', items: [] },
+                    { id: 'bakery', name: 'Bakery', icon: '🍞', items: [] },
+                    { id: 'pantry', name: 'Pantry Staples', icon: '🥫', items: [] },
+                    { id: 'frozen', name: 'Frozen Foods', icon: '🧊', items: [] },
+                    { id: 'beverages', name: 'Beverages', icon: '🥤', items: [] },
+                    { id: 'household', name: 'Household', icon: '🧽', items: [] }
+                ]
+            },
+            loblaws: {
+                name: 'Loblaws',
+                categories: [
+                    { id: 'produce', name: 'Produce', icon: '🥕', items: [] },
+                    { id: 'dairy', name: 'Dairy & Eggs', icon: '🥛', items: [] },
+                    { id: 'meat', name: 'Meat & Seafood', icon: '🥩', items: [] },
+                    { id: 'bakery', name: 'Bakery', icon: '🍞', items: [] },
+                    { id: 'pantry', name: 'Pantry Staples', icon: '🥫', items: [] },
+                    { id: 'frozen', name: 'Frozen Foods', icon: '🧊', items: [] },
+                    { id: 'beverages', name: 'Beverages', icon: '🥤', items: [] },
+                    { id: 'household', name: 'Household', icon: '🧽', items: [] }
+                ]
+            },
+            sobeys: {
+                name: 'Sobeys',
+                categories: [
+                    { id: 'produce', name: 'Produce', icon: '🥕', items: [] },
+                    { id: 'dairy', name: 'Dairy & Eggs', icon: '🥛', items: [] },
+                    { id: 'meat', name: 'Meat & Seafood', icon: '🥩', items: [] },
+                    { id: 'bakery', name: 'Bakery', icon: '🍞', items: [] },
+                    { id: 'pantry', name: 'Pantry Staples', icon: '🥫', items: [] },
+                    { id: 'frozen', name: 'Frozen Foods', icon: '🧊', items: [] },
+                    { id: 'beverages', name: 'Beverages', icon: '🥤', items: [] },
+                    { id: 'household', name: 'Household', icon: '🧽', items: [] }
+                ]
+            },
+            walmart: {
+                name: 'Walmart',
+                categories: [
+                    { id: 'produce', name: 'Produce', icon: '🥕', items: [] },
+                    { id: 'dairy', name: 'Dairy & Eggs', icon: '🥛', items: [] },
+                    { id: 'meat', name: 'Meat & Seafood', icon: '🥩', items: [] },
+                    { id: 'bakery', name: 'Bakery', icon: '🍞', items: [] },
+                    { id: 'pantry', name: 'Pantry Staples', icon: '🥫', items: [] },
+                    { id: 'frozen', name: 'Frozen Foods', icon: '🧊', items: [] },
+                    { id: 'beverages', name: 'Beverages', icon: '🥤', items: [] },
+                    { id: 'household', name: 'Household', icon: '🧽', items: [] }
+                ]
+            }
+        };
+
+        // Auto-categorization rules
+        const categorizationRules = {
+            produce: ['banana', 'apple', 'orange', 'lettuce', 'tomato', 'carrot', 'onion', 'potato', 'fruit', 'vegetable'],
+            dairy: ['milk', 'cheese', 'yogurt', 'butter', 'cream', 'egg', 'dairy'],
+            meat: ['chicken', 'beef', 'pork', 'turkey', 'fish', 'salmon', 'meat', 'seafood'],
+            bakery: ['bread', 'bagel', 'muffin', 'cake', 'pastry', 'bakery'],
+            pantry: ['rice', 'pasta', 'cereal', 'flour', 'oil', 'sauce', 'can', 'jar'],
+            frozen: ['frozen', 'ice cream', 'pizza'],
+            beverages: ['juice', 'soda', 'water', 'coffee', 'tea', 'drink'],
+            household: ['detergent', 'soap', 'shampoo', 'toilet paper', 'cleaning']
+        };
+
+        // Store mapping for API responses
+        const storeApiMapping = {
+            'Metro': 'metro',
+            'Loblaws': 'loblaws', 
+            'Sobeys': 'sobeys',
+            'Walmart': 'walmart'
+        };
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Grocee Frontend Loading...');
+            
+            // Check API connection
+            checkAPIConnection();
+            
+            // Initialize stores
+            initializeStores();
+            
+            // Setup search input
+            setupSearchInput();
+            
+            // Auto-check API every 30 seconds
+            setInterval(checkAPIConnection, 30000);
+            
+            console.log('✅ Grocee Frontend Ready!');
+        });
+
+        // ==========================================
+        // API CONNECTION
+        // ==========================================
+        
+        async function checkAPIConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    apiConnected = true;
+                    updateAPIStatus('connected', '🟢 Backend Connected');
+                    document.getElementById('liveDataBadge').textContent = '📡 Live Canadian Store Data Connected';
+                } else {
+                    throw new Error('API responded but not successful');
+                }
+                
+            } catch (error) {
+                apiConnected = false;
+                updateAPIStatus('disconnected', '🔴 Backend Offline');
+                document.getElementById('liveDataBadge').textContent = '⚠️ Start: node grocee-backend.js';
+                console.warn('⚠️ API connection failed:', error.message);
+            }
+        }
+
+        function updateAPIStatus(status, text) {
+            const statusEl = document.getElementById('apiStatus');
+            const textEl = document.getElementById('apiStatusText');
+            
+            statusEl.className = `api-status ${status}`;
+            textEl.textContent = text;
+        }
+
+        // ==========================================
+        // SEARCH FUNCTIONALITY
+        // ==========================================
+        
+        function setupSearchInput() {
+            const searchInput = document.getElementById('itemName');
+            
+            // Enter key search
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !searchInProgress) {
+                    addItem();
+                }
+            });
+
+            // Live search
+            searchInput.addEventListener('input', function(e) {
+                const query = e.target.value.trim();
+                
+                if (query.length < 2) {
+                    hideSuggestions();
+                    return;
+                }
+
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                }
+
+                searchTimeout = setTimeout(async () => {
+                    await performLiveSearch(query);
+                }, 500);
+            });
+
+            searchInput.addEventListener('blur', function() {
+                setTimeout(() => hideSuggestions(), 200);
+            });
+
+            // Auto-focus
+            searchInput.focus();
+        }
+
+        async function performLiveSearch(query) {
+            if (!apiConnected) return;
+
+            const suggestionsContainer = document.getElementById('searchSuggestions');
+            
+            // Show loading
+            suggestionsContainer.innerHTML = `
+                <div class="suggestion-item">
+                    <span>🔍 Searching for "${query}"...</span>
+                </div>
+            `;
+            showSuggestions();
+
+            try {
+                const response = await fetch(`${API_BASE}/search/${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.success && data.results.length > 0) {
+                    // Display suggestions
+                    suggestionsContainer.innerHTML = data.results.slice(0, 5).map(product => `
+                        <div class="suggestion-item" onclick="selectSuggestion('${escapeQuotes(product.name)}', '${product.store}', ${product.price})">
+                            <div>
+                                <strong>${product.name}</strong>
+                                <div class="suggestion-store">${product.store}</div>
+                            </div>
+                            <div>
+                                <span class="suggestion-price">$${product.price.toFixed(2)}</span>
+                                <span class="live-indicator">LIVE</span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    suggestionsContainer.innerHTML = `
+                        <div class="suggestion-item">
+                            <span>❌ No products found for "${query}"</span>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Search failed:', error);
+                suggestionsContainer.innerHTML = `
+                    <div class="suggestion-item">
+                        <span style="color: #dc3545;">❌ Search failed</span>
+                    </div>
+                `;
+            }
+        }
+
+        function escapeQuotes(str) {
+            return str.replace(/'/g, '\\\'').replace(/"/g, '&quot;');
+        }
+
+        function selectSuggestion(productName, storeName, price) {
+            const itemNameInput = document.getElementById('itemName');
+            const storeSelect = document.getElementById('itemStore');
+            
+            itemNameInput.value = productName;
+            
+            const storeKey = storeApiMapping[storeName] || 'metro';
+            storeSelect.value = storeKey;
+            
+            hideSuggestions();
+            showNotification(`Selected: ${productName} at ${storeName} - $${price.toFixed(2)} 📡`, 'success');
+        }
+
+        function showSuggestions() {
+            document.getElementById('searchSuggestions').style.display = 'block';
+        }
+
+        function hideSuggestions() {
+            document.getElementById('searchSuggestions').style.display = 'none';
+        }
+
+        // ==========================================
+        // ADD ITEM FUNCTIONALITY
+        // ==========================================
+
+        async function addItem() {
+            const itemName = document.getElementById('itemName').value.trim();
+            const storeKey = document.getElementById('itemStore').value;
+
+            if (!itemName) {
+                showNotification('Please enter an item name', 'warning');
+                return;
+            }
+
+            if (storeKey === 'all') {
+                await searchAndShowComparison(itemName);
+                return;
+            }
+
+            try {
+                let priceData = { price: 2.99, originalPrice: 3.49, savings: 0.50 };
+
+                if (apiConnected) {
+                    const response = await fetch(`${API_BASE}/search/${encodeURIComponent(itemName)}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.results.length > 0) {
+                        const storeProduct = data.results.find(p => 
+                            storeApiMapping[p.store] === storeKey
+                        );
+                        
+                        if (storeProduct) {
+                            priceData = {
+                                price: storeProduct.price,
+                                originalPrice: storeProduct.originalPrice || storeProduct.price * 1.2,
+                                savings: storeProduct.savings || 0
+                            };
+                        }
+                    }
+                }
+
+                const category = categorizeItem(itemName);
+                const item = {
+                    id: Date.now() + Math.random(),
+                    name: itemName,
+                    category: category,
+                    price: priceData.price,
+                    originalPrice: priceData.originalPrice,
+                    savings: priceData.savings,
+                    completed: false,
+                    isLiveData: apiConnected
+                };
+
+                const store = stores[storeKey];
+                const categoryObj = store.categories.find(cat => cat.id === category);
+                categoryObj.items.push(item);
+
+                document.getElementById('itemName').value = '';
+                hideSuggestions();
+                renderStore(storeKey);
+                updateAllStats();
+
+                if (currentStore !== storeKey) {
+                    switchStore(storeKey);
+                }
+
+                showNotification(`${itemName} added to ${store.name}! ${item.isLiveData ? '📡' : ''}`, 'success');
+
+            } catch (error) {
+                console.error('Add item failed:', error);
+                showNotification('Failed to add item', 'error');
+            }
+        }
+
+        // ==========================================
+        // STORE MANAGEMENT
+        // ==========================================
+
+        function switchStore(storeKey) {
+            document.querySelectorAll('.store-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-store="${storeKey}"]`).classList.add('active');
+
+            document.querySelectorAll('.store-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(storeKey).classList.add('active');
+
+            currentStore = storeKey;
+            document.getElementById('itemStore').value = storeKey;
+        }
+
+        function categorizeItem(itemName) {
+            const itemLower = itemName.toLowerCase();
+            
+            for (const [category, keywords] of Object.entries(categorizationRules)) {
+                if (keywords.some(keyword => itemLower.includes(keyword))) {
+                    return category;
+                }
+            }
+            
+            return 'pantry';
+        }
+
+        function renderStore(storeKey) {
+            const store = stores[storeKey];
+            const container = document.getElementById(`${storeKey}-categories`);
+            
+            container.innerHTML = '';
+            
+            store.categories.forEach(category => {
+                const categoryElement = createCategoryElement(storeKey, category);
+                container.appendChild(categoryElement);
+            });
+        }
+
+        function createCategoryElement(storeKey, category) {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'category-section';
+
+            const hasItems = category.items.length > 0;
+            
+            categoryDiv.innerHTML = `
+                <div class="category-header">
+                    <div>
+                        ${category.icon} ${category.name} (${category.items.length})
+                    </div>
+                </div>
+                ${hasItems ? 
+                    `<ul class="category-items">
+                        ${category.items.map(item => createItemElement(storeKey, item)).join('')}
+                    </ul>` :
+                    `<div class="empty-category">
+                        <div style="margin-bottom: 10px;">${category.icon} No ${category.name.toLowerCase()} items yet</div>
+                        <div style="font-size: 0.9rem; color: #666;">
+                            Use the search above to add ${category.name.toLowerCase()} items
+                        </div>
+                    </div>`
+                }
+            `;
+
+            return categoryDiv;
+        }
+
+        function createItemElement(storeKey, item) {
+            return `
+                <li class="list-item ${item.completed ? 'completed' : ''}">
+                    <input type="checkbox" class="item-checkbox" ${item.completed ? 'checked' : ''} 
+                           onchange="toggleItem('${storeKey}', '${item.id}')">
+                    <span class="item-text">
+                        ${item.name}
+                        ${item.isLiveData ? '<span class="live-indicator">LIVE</span>' : ''}
+                    </span>
+                    <span class="item-price">$${item.price.toFixed(2)}</span>
+                    <div class="item-actions">
+                        <button class="delete-btn" onclick="deleteItem('${storeKey}', '${item.id}')">
+                            🗑️
+                        </button>
+                    </div>
+                </li>
+            `;
+        }
+
+        function toggleItem(storeKey, itemId) {
+            const store = stores[storeKey];
+            let item = null;
+            
+            for (const category of store.categories) {
+                const foundItem = category.items.find(i => i.id == itemId);
+                if (foundItem) {
+                    item = foundItem;
+                    break;
+                }
+            }
+            
+            if (item) {
+                item.completed = !item.completed;
+                renderStore(storeKey);
+                updateAllStats();
+            }
+        }
+
+        function deleteItem(storeKey, itemId) {
+            const store = stores[storeKey];
+            
+            for (const category of store.categories) {
+                const itemIndex = category.items.findIndex(i => i.id == itemId);
+                if (itemIndex !== -1) {
+                    const item = category.items[itemIndex];
+                    category.items.splice(itemIndex, 1);
+                    renderStore(storeKey);
+                    updateAllStats();
+                    showNotification(`${item.name} removed from list`, 'info');
+                    break;
+                }
+            }
+        }
+
+        // ==========================================
+        // PRICE COMPARISON
+        // ==========================================
+
+        async function searchAndShowComparison(itemName) {
+            if (!apiConnected) {
+                showNotification('Backend not connected - cannot compare prices', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/search/${encodeURIComponent(itemName)}`);
+                const data = await response.json();
+                
+                if (data.success && data.results.length > 0) {
+                    const section = document.getElementById('priceComparison');
+                    const toggle = document.getElementById('comparisonToggle');
+                    
+                    section.classList.add('active');
+                    toggle.textContent = 'Hide Comparisons';
+                    toggle.classList.add('active');
+
+                    generateItemComparison(itemName, data.results);
+                    showNotification(`🔍 Found ${data.results.length} products for "${itemName}"! 📡`, 'success');
+                } else {
+                    showNotification(`No products found for "${itemName}"`, 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Search failed:', error);
+                showNotification('Search failed - please try again', 'error');
+            }
+        }
+
+        function generateItemComparison(itemName, results) {
+            const grid = document.getElementById('comparisonGrid');
+            
+            const sortedResults = results.sort((a, b) => a.price - b.price);
+            const bestDeal = sortedResults[0];
+
+            grid.innerHTML = `
+                <div class="comparison-card best-deal">
+                    <h3>🔍 "${itemName}" - Live Price Comparison</h3>
+                    <p><strong>Best Deal: ${bestDeal.store} - $${bestDeal.price.toFixed(2)} 🏆</strong></p>
+                    <div style="color: #28a745; font-size: 0.9rem; margin-top: 10px;">📡 Live data from backend</div>
+                </div>
+                ${sortedResults.map((product, index) => `
+                    <div class="comparison-card ${index === 0 ? 'best-deal' : ''}">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                            <div>
+                                <h4>${product.name}</h4>
+                                <div style="font-weight: 600; color: #667eea; margin: 5px 0;">${product.store}</div>
+                            </div>
+                            ${index === 0 ? '<div style="background: #28a745; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">🏆 BEST</div>' : ''}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <div style="font-size: 1.4rem; font-weight: 700; color: #28a745;">$${product.price.toFixed(2)}</div>
+                            <div class="live-indicator">LIVE</div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="addComparisonItemToList('${escapeQuotes(product.name)}', '${product.store}', ${product.price})" style="width: 100%; margin-top: 10px;">
+                            Add to ${product.store} List
+                        </button>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function addComparisonItemToList(productName, storeName, price) {            
+            const storeKey = storeApiMapping[storeName] || 'metro';
+            
+            document.getElementById('itemStore').value = storeKey;
+            document.getElementById('itemName').value = productName;
+            addItem();
+        }
+
+        function togglePriceComparison() {
+            const section = document.getElementById('priceComparison');
+            const toggle = document.getElementById('comparisonToggle');
+            
+            if (section.classList.contains('active')) {
+                section.classList.remove('active');
+                toggle.textContent = '💰 Compare Prices';
+                toggle.classList.remove('active');
+            } else {
+                section.classList.add('active');
+                toggle.textContent = 'Hide Comparisons';
+                toggle.classList.add('active');
+            }
+        }
+
+        // ==========================================
+        // UTILITY FUNCTIONS
+        // ==========================================
+
+        function updateAllStats() {
+            let totalItems = 0;
+            let totalSavings = 0;
+            
+            Object.keys(stores).forEach(storeKey => {
+                const store = stores[storeKey];
+                let storeItems = 0;
+                let storeCost = 0;
+                let storeSavings = 0;
+                
+                store.categories.forEach(category => {
+                    category.items.forEach(item => {
+                        storeItems++;
+                        totalItems++;
+                        storeCost += item.price;
+                        storeSavings += item.savings || 0;
+                        totalSavings += item.savings || 0;
+                    });
+                });
+                
+                document.getElementById(`${storeKey}-count`).textContent = storeItems;
+                document.getElementById(`${storeKey}-items`).textContent = storeItems;
+                document.getElementById(`${storeKey}-cost`).textContent = storeCost.toFixed(2);
+                document.getElementById(`${storeKey}-savings`).textContent = storeSavings.toFixed(2);
+            });
+            
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('totalSavings').textContent = totalSavings.toFixed(2);
+        }
+
+        function initializeStores() {
+            Object.keys(stores).forEach(storeKey => {
+                renderStore(storeKey);
+            });
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
