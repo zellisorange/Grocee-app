@@ -1,0 +1,33 @@
+{
+  "name": "grocee-clean",
+  "version": "1.0.0",
+  "description": "Clean Grocee Canadian Grocery App with Working Scraper",
+  "main": "grocee-backend.js",
+  "scripts": {
+    "start": "node grocee-backend.js",
+    "dev": "nodemon grocee-backend.js",
+    "test": "curl http://localhost:3001/api/status",
+    "install-deps": "npm install express cors puppeteer-extra puppeteer-extra-plugin-stealth"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "grocery",
+    "scraping",
+    "canada",
+    "price-comparison",
+    "puppeteer"
+  ],
+  "author": "Irish Developer",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
